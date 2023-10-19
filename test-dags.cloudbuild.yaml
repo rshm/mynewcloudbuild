@@ -1,0 +1,36 @@
+steps:
+  # Docker Build
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t',
+           'us-central1-docker.pkg.dev/qwiklabs-gcp-03-3cbcd8eb2977/my-docker-repo/myimage',
+           '.']
+
+  # Docker Push
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push',
+           'us-central1-docker.pkg.dev/qwiklabs-gcp-03-3cbcd8eb2977/my-docker-repo/myimage']
+
+  # Entrypoint, timeout and environment variables
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    timeout: 240s
+    args: ['compute', 'instances',
+           'create-with-container', 'my-vm-name',
+           '--container-image',
+           'us-central1-docker.pkg.dev/qwiklabs-gcp-03-3cbcd8eb2977/my-docker-repo/myimage']
+    env:
+      - 'CLOUDSDK_COMPUTE_REGION=us-central1'
+      - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+
+  - name: python:3.8-slim
+    entrypoint: pip
+    args: ["install", "-r", "requirements.txt", "-c", "constraints.txt", "--user"]
+
+  - name: python:3.8-slim
+    entrypoint: pip
+    args: ["install", "-r", "requirements-test.txt", "--user"]
+
+  # run in python 3.8 which is latest version in Cloud Composer
+  - name: python:3.8-slim
+    entrypoint: python3.8
+    args: ["-m", "pytest", "-s", "dags/"]
